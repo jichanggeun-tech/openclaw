@@ -214,6 +214,7 @@ export function buildAgentSystemPrompt(params: {
   acpEnabled?: boolean;
   runtimeInfo?: {
     agentId?: string;
+    version?: string;
     host?: string;
     os?: string;
     arch?: string;
@@ -703,6 +704,7 @@ export function buildRuntimeLine(
 ): string {
   return `Runtime: ${[
     runtimeInfo?.agentId ? `agent=${runtimeInfo.agentId}` : "",
+    runtimeInfo?.version ? `version=${runtimeInfo.version}` : "",
     runtimeInfo?.host ? `host=${runtimeInfo.host}` : "",
     runtimeInfo?.repoRoot ? `repo=${runtimeInfo.repoRoot}` : "",
     runtimeInfo?.os
