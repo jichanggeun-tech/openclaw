@@ -689,6 +689,7 @@ export function buildAgentSystemPrompt(params: {
 export function buildRuntimeLine(
   runtimeInfo?: {
     agentId?: string;
+    version?: string;
     host?: string;
     os?: string;
     arch?: string;

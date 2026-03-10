@@ -32,6 +32,16 @@ const BROWSER_TOOL_ACTIONS = [
   "upload",
   "dialog",
   "act",
+  "bookmarks",
+] as const;
+
+const BROWSER_BOOKMARK_OPS = [
+  "getTree",
+  "search",
+  "create",
+  "update",
+  "move",
+  "remove",
 ] as const;
 
 const BROWSER_TARGETS = ["sandbox", "host", "node"] as const;
@@ -135,4 +145,13 @@ export const BrowserToolSchema = Type.Object({
   loadState: Type.Optional(Type.String()),
   fn: Type.Optional(Type.String()),
   request: Type.Optional(BrowserActSchema),
+  // bookmarks action params (requires profile="chrome" with extension relay)
+  bookmarkOp: Type.Optional(stringEnum(BROWSER_BOOKMARK_OPS)),
+  bookmarkId: Type.Optional(Type.String()),
+  bookmarkQuery: Type.Optional(Type.String()),
+  bookmarkTitle: Type.Optional(Type.String()),
+  bookmarkUrl: Type.Optional(Type.String()),
+  bookmarkParentId: Type.Optional(Type.String()),
+  bookmarkIndex: Type.Optional(Type.Number()),
+  bookmarkRecursive: Type.Optional(Type.Boolean()),
 });

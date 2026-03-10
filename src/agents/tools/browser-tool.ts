@@ -8,6 +8,12 @@ import {
   browserScreenshotAction,
 } from "../../browser/client-actions.js";
 import {
+  browserBookmarksCreate,
+  browserBookmarksGetTree,
+  browserBookmarksMove,
+  browserBookmarksRemove,
+  browserBookmarksSearch,
+  browserBookmarksUpdate,
   browserCloseTab,
   browserFocusTab,
   browserOpenTab,
@@ -290,7 +296,7 @@ export function createBrowserTool(opts?: {
     description: [
       "Control the browser via OpenClaw's browser control server (status/start/stop/profiles/tabs/open/snapshot/screenshot/actions).",
       'Profiles: use profile="chrome" for Chrome extension relay takeover (your existing Chrome tabs). Use profile="openclaw" for the isolated openclaw-managed browser.',
-      'If the user mentions the Chrome extension / Browser Relay / toolbar button / “attach tab”, ALWAYS use profile="chrome" (do not ask which profile).',
+      'If the user mentions the Chrome extension / Browser Relay / toolbar button / "attach tab", ALWAYS use profile="chrome" (do not ask which profile).',
       'When a node-hosted browser proxy is available, the tool may auto-route to it. Pin a node with node=<id|name> or target="node".',
       "Chrome extension relay needs an attached tab: user must click the OpenClaw Browser Relay toolbar icon on the tab (badge ON). If no tab is connected, ask them to attach it.",
       "When using refs from snapshot (e.g. e12), keep the same tab: prefer passing targetId from the snapshot response into subsequent actions (act/click/type/etc).",
@@ -298,6 +304,7 @@ export function createBrowserTool(opts?: {
       "Use snapshot+act for UI automation. Avoid act:wait by default; use only in exceptional cases when no reliable UI state exists.",
       `target selects browser location (sandbox|host|node). Default: ${targetDefault}.`,
       hostHint,
+      'Bookmark management - TWO methods: (1) SIMPLE FILE method (recommended, works immediately): exec "node ~/.openclaw/bookmarks.mjs stats" to see overview, "node ~/.openclaw/bookmarks.mjs list" for tree, "node ~/.openclaw/bookmarks.mjs search <query>", "node ~/.openclaw/bookmarks.mjs delete <id>", "node ~/.openclaw/bookmarks.mjs move <id> <parentId>", "node ~/.openclaw/bookmarks.mjs create-folder <name> <parentId>". Close Edge/Chrome before writing. (2) CDP method (requires profile="chrome" extension relay): action="bookmarks", bookmarkOp: getTree/search/create/update/move/remove with bookmarkId/bookmarkTitle/bookmarkUrl/bookmarkParentId/bookmarkIndex/bookmarkRecursive.',
     ].join(" "),
     parameters: BrowserToolSchema,
     execute: async (_toolCallId, args) => {
@@ -648,6 +655,133 @@ export function createBrowserTool(opts?: {
             profile,
             proxyRequest,
           });
+        }
+        case "bookmarks": {
+          const op = readStringParam(params, "bookmarkOp", { required: true });
+          const bookmarkId = readStringParam(params, "bookmarkId");
+          const bookmarkQuery = readStringParam(params, "bookmarkQuery");
+          const bookmarkTitle = readStringParam(params, "bookmarkTitle");
+          const bookmarkUrl = readStringParam(params, "bookmarkUrl");
+          const bookmarkParentId = readStringParam(params, "bookmarkParentId");
+          const bookmarkIndex =
+            typeof params.bookmarkIndex === "number" ? params.bookmarkIndex : undefined;
+          const bookmarkRecursive = Boolean(params.bookmarkRecursive);
+
+          if (proxyRequest) {
+            switch (op) {
+              case "getTree":
+                return jsonResult(await proxyRequest({ method: "GET", path: "/bookmarks", profile }));
+              case "search":
+                if (!bookmarkQuery) throw new Error("bookmarkQuery is required for search");
+                return jsonResult(
+                  await proxyRequest({
+                    method: "GET",
+                    path: "/bookmarks/search",
+                    query: { query: bookmarkQuery },
+                    profile,
+                  }),
+                );
+              case "create":
+                return jsonResult(
+                  await proxyRequest({
+                    method: "POST",
+                    path: "/bookmarks/create",
+                    profile,
+                    body: {
+                      title: bookmarkTitle,
+                      url: bookmarkUrl,
+                      parentId: bookmarkParentId,
+                      index: bookmarkIndex,
+                    },
+                  }),
+                );
+              case "update":
+                if (!bookmarkId) throw new Error("bookmarkId is required for update");
+                return jsonResult(
+                  await proxyRequest({
+                    method: "POST",
+                    path: "/bookmarks/update",
+                    profile,
+                    body: { id: bookmarkId, title: bookmarkTitle, url: bookmarkUrl },
+                  }),
+                );
+              case "move":
+                if (!bookmarkId) throw new Error("bookmarkId is required for move");
+                return jsonResult(
+                  await proxyRequest({
+                    method: "POST",
+                    path: "/bookmarks/move",
+                    profile,
+                    body: { id: bookmarkId, parentId: bookmarkParentId, index: bookmarkIndex },
+                  }),
+                );
+              case "remove":
+                if (!bookmarkId) throw new Error("bookmarkId is required for remove");
+                return jsonResult(
+                  await proxyRequest({
+                    method: "POST",
+                    path: "/bookmarks/remove",
+                    profile,
+                    body: { id: bookmarkId, recursive: bookmarkRecursive },
+                  }),
+                );
+              default:
+                throw new Error(`Unknown bookmarkOp: ${op}`);
+            }
+          }
+
+          switch (op) {
+            case "getTree":
+              return jsonResult(await browserBookmarksGetTree(baseUrl, { profile }));
+            case "search":
+              if (!bookmarkQuery) throw new Error("bookmarkQuery is required for search");
+              return jsonResult(
+                await browserBookmarksSearch(baseUrl, bookmarkQuery, { profile }),
+              );
+            case "create":
+              return jsonResult(
+                await browserBookmarksCreate(
+                  baseUrl,
+                  {
+                    title: bookmarkTitle,
+                    url: bookmarkUrl,
+                    parentId: bookmarkParentId,
+                    index: bookmarkIndex,
+                  },
+                  { profile },
+                ),
+              );
+            case "update":
+              if (!bookmarkId) throw new Error("bookmarkId is required for update");
+              return jsonResult(
+                await browserBookmarksUpdate(
+                  baseUrl,
+                  bookmarkId,
+                  { title: bookmarkTitle, url: bookmarkUrl },
+                  { profile },
+                ),
+              );
+            case "move":
+              if (!bookmarkId) throw new Error("bookmarkId is required for move");
+              return jsonResult(
+                await browserBookmarksMove(
+                  baseUrl,
+                  bookmarkId,
+                  { parentId: bookmarkParentId, index: bookmarkIndex },
+                  { profile },
+                ),
+              );
+            case "remove":
+              if (!bookmarkId) throw new Error("bookmarkId is required for remove");
+              return jsonResult(
+                await browserBookmarksRemove(baseUrl, bookmarkId, {
+                  recursive: bookmarkRecursive,
+                  profile,
+                }),
+              );
+            default:
+              throw new Error(`Unknown bookmarkOp: ${op}`);
+          }
         }
         default:
           throw new Error(`Unknown action: ${action}`);

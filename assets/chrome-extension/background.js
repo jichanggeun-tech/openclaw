@@ -626,10 +626,75 @@ async function connectOrToggleForActiveTab() {
   }
 }
 
+async function handleBookmarksApi(method, params) {
+  switch (method) {
+    case 'Bookmarks.getTree':
+      return { tree: await chrome.bookmarks.getTree() }
+    case 'Bookmarks.search': {
+      const query = params?.query
+      const results = typeof query === 'string'
+        ? await chrome.bookmarks.search(query)
+        : await chrome.bookmarks.search(
+            /** @type {chrome.bookmarks.BookmarkSearchQuery} */ (params || {}),
+          )
+      return { results }
+    }
+    case 'Bookmarks.get': {
+      const id = params?.id
+      if (!id) throw new Error('Bookmarks.get: id is required')
+      const items = await chrome.bookmarks.get(Array.isArray(id) ? id : [String(id)])
+      return { bookmarks: items }
+    }
+    case 'Bookmarks.create': {
+      const dest = /** @type {chrome.bookmarks.BookmarkCreateArg} */ ({})
+      if (params?.parentId !== undefined) dest.parentId = String(params.parentId)
+      if (params?.index !== undefined) dest.index = Number(params.index)
+      if (params?.title !== undefined) dest.title = String(params.title)
+      if (params?.url !== undefined) dest.url = String(params.url)
+      return await chrome.bookmarks.create(dest)
+    }
+    case 'Bookmarks.remove': {
+      const id = params?.id
+      if (!id) throw new Error('Bookmarks.remove: id is required')
+      await chrome.bookmarks.remove(String(id))
+      return { ok: true }
+    }
+    case 'Bookmarks.removeTree': {
+      const id = params?.id
+      if (!id) throw new Error('Bookmarks.removeTree: id is required')
+      await chrome.bookmarks.removeTree(String(id))
+      return { ok: true }
+    }
+    case 'Bookmarks.update': {
+      const id = params?.id
+      if (!id) throw new Error('Bookmarks.update: id is required')
+      const changes = /** @type {chrome.bookmarks.BookmarkChangesArg} */ ({})
+      if (params?.title !== undefined) changes.title = String(params.title)
+      if (params?.url !== undefined) changes.url = String(params.url)
+      return await chrome.bookmarks.update(String(id), changes)
+    }
+    case 'Bookmarks.move': {
+      const id = params?.id
+      if (!id) throw new Error('Bookmarks.move: id is required')
+      const dest = /** @type {chrome.bookmarks.BookmarkDestinationArg} */ ({})
+      if (params?.parentId !== undefined) dest.parentId = String(params.parentId)
+      if (params?.index !== undefined) dest.index = Number(params.index)
+      return await chrome.bookmarks.move(String(id), dest)
+    }
+    default:
+      throw new Error(`Unknown Bookmarks method: ${method}`)
+  }
+}
+
 async function handleForwardCdpCommand(msg) {
   const method = String(msg?.params?.method || '').trim()
   const params = msg?.params?.params || undefined
   const sessionId = typeof msg?.params?.sessionId === 'string' ? msg.params.sessionId : undefined
+
+  // Handle Bookmarks.* API calls without requiring an attached tab
+  if (method.startsWith('Bookmarks.')) {
+    return await handleBookmarksApi(method, params)
+  }
 
   const bySession = sessionId ? getTabBySessionId(sessionId) : null
   const targetId = typeof params?.targetId === 'string' ? params.targetId : undefined
