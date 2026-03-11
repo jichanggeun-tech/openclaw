@@ -17,12 +17,17 @@ import type { EmbeddedContextFile } from "../pi-embedded-helpers.js";
 import { detectRuntimeShell } from "../shell-utils.js";
 import { buildSystemPromptParams } from "../system-prompt-params.js";
 import { buildAgentSystemPrompt } from "../system-prompt.js";
+import { VERSION } from "../../version.js";
 export { buildCliSupervisorScopeKey, resolveCliNoOutputTimeoutMs } from "./reliability.js";
 
 const CLI_RUN_QUEUE = new KeyedAsyncQueue();
 export function enqueueCliRun<T>(key: string, task: () => Promise<T>): Promise<T> {
   return CLI_RUN_QUEUE.enqueue(key, task);
 }
+
+// (중략 부분은 건너뛰고 바로 `buildSystemPrompt` 파트로 갑니다 - ReplaceContent는 정확한 기존 코드를 기반으로 해야 합니다.)
+// 파일 상단에 import를 넣기 위해, 첫 수입문 근처를 노리는 것이 낫습니다.
+// 하지만 `AllowMultiple: false`이고 타겟을 잡기가 어려우므로 라인을 구체화하겠습니다.
 
 type CliUsage = {
   input?: number;
@@ -67,6 +72,7 @@ export function buildSystemPrompt(params: {
       os: `${os.type()} ${os.release()}`,
       arch: os.arch(),
       node: process.version,
+      version: VERSION,
       model: params.modelDisplay,
       defaultModel: defaultModelLabel,
       shell: detectRuntimeShell(),

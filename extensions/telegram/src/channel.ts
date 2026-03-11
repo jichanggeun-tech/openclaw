@@ -1,11 +1,13 @@
-import { createScopedChannelConfigBase } from "openclaw/plugin-sdk/compat";
+import {
+  createScopedChannelConfigBase,
+  createScopedAccountConfigAccessors,
+  createScopedDmSecurityResolver,
+} from "../../../src/plugin-sdk/channel-config-helpers.js";
 import {
   collectAllowlistProviderGroupPolicyWarnings,
   collectOpenGroupPolicyRouteAllowlistWarnings,
-  createScopedAccountConfigAccessors,
-  createScopedDmSecurityResolver,
-  formatAllowFromLowercase,
-} from "openclaw/plugin-sdk/compat";
+} from "../../../src/channels/plugins/group-policy-warnings.js";
+import { formatAllowFromLowercase } from "../../../src/plugin-sdk/allow-from.js";
 import {
   applyAccountNameToChannelSection,
   buildChannelConfigSchema,

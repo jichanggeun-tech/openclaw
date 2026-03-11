@@ -36,6 +36,7 @@ export function buildEmbeddedSystemPrompt(params: {
     os: string;
     arch: string;
     node: string;
+    version?: string;
     model: string;
     provider?: string;
     capabilities?: string[];

@@ -16,6 +16,7 @@ export type RuntimeInfoInput = {
   os: string;
   arch: string;
   node: string;
+  version?: string;
   model: string;
   defaultModel?: string;
   shell?: string;

@@ -98,6 +98,7 @@ import { isRunnerAbortError } from "../abort.js";
 import { appendCacheTtlTimestamp, isCacheTtlEligibleProvider } from "../cache-ttl.js";
 import type { CompactEmbeddedPiSessionParams } from "../compact.js";
 import { buildEmbeddedExtensionFactories } from "../extensions.js";
+import { VERSION } from "../../../version.js";
 import { applyExtraParamsToAgent } from "../extra-params.js";
 import {
   logToolSchemasForGoogle,
@@ -982,6 +983,7 @@ export async function runEmbeddedAttempt(
         os: `${os.type()} ${os.release()}`,
         arch: os.arch(),
         node: process.version,
+        version: VERSION,
         model: `${params.provider}/${params.modelId}`,
         defaultModel: defaultModelLabel,
         shell: detectRuntimeShell(),

@@ -697,6 +697,7 @@ export function buildRuntimeLine(
     os?: string;
     arch?: string;
     node?: string;
+    version?: string;
     model?: string;
     defaultModel?: string;
     shell?: string;
@@ -717,6 +718,7 @@ export function buildRuntimeLine(
         ? `arch=${runtimeInfo.arch}`
         : "",
     runtimeInfo?.node ? `node=${runtimeInfo.node}` : "",
+    runtimeInfo?.version ? `openclaw_version=${runtimeInfo.version}` : "",
     runtimeInfo?.model ? `model=${runtimeInfo.model}` : "",
     runtimeInfo?.defaultModel ? `default_model=${runtimeInfo.defaultModel}` : "",
     runtimeInfo?.shell ? `shell=${runtimeInfo.shell}` : "",
