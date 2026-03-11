@@ -11,6 +11,7 @@ import {
 
 export type RuntimeInfoInput = {
   agentId?: string;
+  version?: string;
   host: string;
   os: string;
   arch: string;

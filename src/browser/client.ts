@@ -339,3 +339,92 @@ export async function browserSnapshot(
 }
 
 // Actions beyond the basic read-only commands live in client-actions.ts.
+
+export type BookmarkNode = {
+  id: string;
+  parentId?: string;
+  index?: number;
+  url?: string;
+  title: string;
+  dateAdded?: number;
+  dateGroupModified?: number;
+  children?: BookmarkNode[];
+};
+
+export async function browserBookmarksGetTree(
+  baseUrl: string | undefined,
+  opts?: { profile?: string },
+): Promise<{ ok: true; tree: BookmarkNode[] }> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson(withBaseUrl(baseUrl, `/bookmarks${q}`), { timeoutMs: 10000 });
+}
+
+export async function browserBookmarksSearch(
+  baseUrl: string | undefined,
+  query: string,
+  opts?: { profile?: string },
+): Promise<{ ok: true; results: BookmarkNode[] }> {
+  const q = new URLSearchParams({ query });
+  if (opts?.profile) q.set("profile", opts.profile);
+  return await fetchBrowserJson(withBaseUrl(baseUrl, `/bookmarks/search?${q.toString()}`), {
+    timeoutMs: 10000,
+  });
+}
+
+export async function browserBookmarksCreate(
+  baseUrl: string | undefined,
+  bookmark: { title?: string; url?: string; parentId?: string; index?: number },
+  opts?: { profile?: string },
+): Promise<{ ok: true; bookmark: BookmarkNode }> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson(withBaseUrl(baseUrl, `/bookmarks/create${q}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(bookmark),
+    timeoutMs: 10000,
+  });
+}
+
+export async function browserBookmarksUpdate(
+  baseUrl: string | undefined,
+  id: string,
+  changes: { title?: string; url?: string },
+  opts?: { profile?: string },
+): Promise<{ ok: true; bookmark: BookmarkNode }> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson(withBaseUrl(baseUrl, `/bookmarks/update${q}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, ...changes }),
+    timeoutMs: 10000,
+  });
+}
+
+export async function browserBookmarksMove(
+  baseUrl: string | undefined,
+  id: string,
+  dest: { parentId?: string; index?: number },
+  opts?: { profile?: string },
+): Promise<{ ok: true; bookmark: BookmarkNode }> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson(withBaseUrl(baseUrl, `/bookmarks/move${q}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, ...dest }),
+    timeoutMs: 10000,
+  });
+}
+
+export async function browserBookmarksRemove(
+  baseUrl: string | undefined,
+  id: string,
+  opts?: { recursive?: boolean; profile?: string },
+): Promise<{ ok: true }> {
+  const q = buildProfileQuery(opts?.profile);
+  return await fetchBrowserJson(withBaseUrl(baseUrl, `/bookmarks/remove${q}`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, recursive: opts?.recursive ?? false }),
+    timeoutMs: 10000,
+  });
+}

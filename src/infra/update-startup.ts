@@ -9,7 +9,12 @@ import { VERSION } from "../version.js";
 import { writeJsonAtomic } from "./json-files.js";
 import { resolveOpenClawPackageRoot } from "./openclaw-root.js";
 import { normalizeUpdateChannel, DEFAULT_PACKAGE_CHANNEL } from "./update-channels.js";
-import { compareSemverStrings, resolveNpmChannelTag, checkUpdateStatus } from "./update-check.js";
+import {
+  compareSemverStrings,
+  resolveNpmChannelTag,
+  checkUpdateStatus,
+  checkGitUpdateStatus,
+} from "./update-check.js";
 
 type UpdateCheckState = {
   lastCheckedAt?: string;
@@ -364,11 +369,58 @@ export async function runGatewayUpdateCheck(params: {
   if (status.installKind !== "package") {
     delete nextState.lastAvailableVersion;
     delete nextState.lastAvailableTag;
-    clearAutoState(nextState);
     setUpdateAvailableCache({
       next: null,
       onUpdateAvailableChange: params.onUpdateAvailableChange,
     });
+
+    if (status.installKind === "git" && auto.enabled && root) {
+      const gitStatus = await checkGitUpdateStatus({
+        root,
+        timeoutMs: 8000,
+        fetch: true,
+      }).catch(() => null);
+
+      const behind = gitStatus?.behind;
+      if (typeof behind === "number" && behind > 0) {
+        const lastAttemptAt = state.autoLastAttemptAt
+          ? Date.parse(state.autoLastAttemptAt)
+          : null;
+        const recentAttempt =
+          state.autoLastAttemptVersion === `git:behind:${behind}` &&
+          lastAttemptAt != null &&
+          Number.isFinite(lastAttemptAt) &&
+          now - lastAttemptAt < ONE_HOUR_MS;
+
+        if (recentAttempt) {
+          params.log.info("auto-update deferred (recent attempt)", { behind });
+        } else {
+          nextState.autoLastAttemptVersion = `git:behind:${behind}`;
+          nextState.autoLastAttemptAt = new Date(now).toISOString();
+          const runAuto = params.runAutoUpdate ?? runAutoUpdateCommand;
+          const outcome = await runAuto({
+            channel: "stable",
+            timeoutMs: AUTO_UPDATE_COMMAND_TIMEOUT_MS,
+            root,
+          });
+          if (outcome.ok) {
+            nextState.autoLastSuccessVersion = `git:behind:${behind}`;
+            nextState.autoLastSuccessAt = new Date(now).toISOString();
+            params.log.info("auto-update applied (git)", { behind });
+          } else {
+            params.log.info("auto-update attempt failed (git)", {
+              behind,
+              reason: outcome.reason ?? `exit:${outcome.code}`,
+            });
+          }
+        }
+      } else {
+        clearAutoState(nextState);
+      }
+    } else {
+      clearAutoState(nextState);
+    }
+
     await writeState(statePath, nextState);
     return;
   }

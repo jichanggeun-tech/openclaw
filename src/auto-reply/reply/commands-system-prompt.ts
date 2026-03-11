@@ -1,4 +1,5 @@
 import type { AgentTool } from "@mariozechner/pi-agent-core";
+import { VERSION } from "../../version.js";
 import { resolveSessionAgentIds } from "../../agents/agent-scope.js";
 import { resolveBootstrapContextForRun } from "../../agents/bootstrap-files.js";
 import { resolveDefaultModelForAgent } from "../../agents/model-selection.js";
@@ -88,6 +89,7 @@ export async function resolveCommandsSystemPromptBundle(
     workspaceDir,
     cwd: process.cwd(),
     runtime: {
+      version: VERSION,
       host: "unknown",
       os: "unknown",
       arch: "unknown",
