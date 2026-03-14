@@ -22,7 +22,7 @@ import type {
   PluginHookBeforeAgentStartResult,
   PluginHookBeforePromptBuildResult,
 } from "../../../plugins/types.js";
-import { isCronSessionKey, isSubagentSessionKey } from "../../../routing/session-key.js";
+import { isCronSessionKey, isSubagentSessionKey, parseAgentSessionKey } from "../../../routing/session-key.js";
 import { joinPresentTextSegments } from "../../../shared/text/join-segments.js";
 import { resolveSignalReactionLevel } from "../../../signal/reaction-level.js";
 import { resolveTelegramInlineButtonsScope } from "../../../telegram/inline-buttons.js";
@@ -990,6 +990,17 @@ export async function runEmbeddedAttempt(
         channel: runtimeChannel,
         capabilities: runtimeCapabilities,
         channelActions,
+        targetHint: (() => {
+          const parsed = parseAgentSessionKey(params.sessionKey);
+          if (!parsed) return undefined;
+          const parts = parsed.rest.split(":");
+          const last = parts[parts.length - 1];
+          // Simple heuristic: if the last part looks like an ID (numeric or typical ID string)
+          if (last && (last.match(/^\d+$/) || last.match(/^[a-zA-Z0-9_-]{8,}$/))) {
+            return last;
+          }
+          return undefined;
+        })(),
       },
     });
     const isDefaultAgent = sessionAgentId === defaultAgentId;

@@ -16,7 +16,6 @@ export type RuntimeInfoInput = {
   os: string;
   arch: string;
   node: string;
-  version?: string;
   model: string;
   defaultModel?: string;
   shell?: string;
@@ -25,6 +24,8 @@ export type RuntimeInfoInput = {
   /** Supported message actions for the current channel (e.g., react, edit, unsend) */
   channelActions?: string[];
   repoRoot?: string;
+  /** Current message target (chatId/userId) hint for message tool */
+  targetHint?: string;
 };
 
 export type SystemPromptRuntimeParams = {

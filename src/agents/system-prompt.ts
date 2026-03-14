@@ -139,7 +139,8 @@ function buildMessagingSection(params: {
       ? [
           "",
           "### message tool",
-          "- Use `message` for proactive sends + channel actions (polls, reactions, etc.).",
+          "- Use `message` ONLY for proactive background sends, cross-channel messages, or specific channel actions (polls, reactions, etc.).",
+          "- **CRITICAL**: For your immediate response to the user's current message, DO NOT use this tool. Respond with plain text instead.",
           "- For `action=send`, include `to` and `message`.",
           `- If multiple channels are configured, pass \`channel\` (${params.messageChannelOptions}).`,
           `- If you use \`message\` (\`action=send\`) to deliver your user-visible reply, respond with ONLY: ${SILENT_REPLY_TOKEN} (avoid duplicate replies).`,
@@ -697,11 +698,11 @@ export function buildRuntimeLine(
     os?: string;
     arch?: string;
     node?: string;
-    version?: string;
     model?: string;
     defaultModel?: string;
     shell?: string;
     repoRoot?: string;
+    targetHint?: string;
   },
   runtimeChannel?: string,
   runtimeCapabilities: string[] = [],
@@ -709,7 +710,6 @@ export function buildRuntimeLine(
 ): string {
   return `Runtime: ${[
     runtimeInfo?.agentId ? `agent=${runtimeInfo.agentId}` : "",
-    runtimeInfo?.version ? `version=${runtimeInfo.version}` : "",
     runtimeInfo?.host ? `host=${runtimeInfo.host}` : "",
     runtimeInfo?.repoRoot ? `repo=${runtimeInfo.repoRoot}` : "",
     runtimeInfo?.os
@@ -722,6 +722,7 @@ export function buildRuntimeLine(
     runtimeInfo?.model ? `model=${runtimeInfo.model}` : "",
     runtimeInfo?.defaultModel ? `default_model=${runtimeInfo.defaultModel}` : "",
     runtimeInfo?.shell ? `shell=${runtimeInfo.shell}` : "",
+    runtimeInfo?.targetHint ? `target=${runtimeInfo.targetHint}` : "",
     runtimeChannel ? `channel=${runtimeChannel}` : "",
     runtimeChannel
       ? `capabilities=${runtimeCapabilities.length > 0 ? runtimeCapabilities.join(",") : "none"}`
